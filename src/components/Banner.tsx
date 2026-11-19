@@ -10,7 +10,7 @@ interface BannerProps {
 
 export default function Banner() {
   return (
-    <section className="relative w-full border-b-4 border-brand-orange bg-surface-warm transition-colors duration-200">
+    <section className="">
       <div className="mx-auto grid max-w-7xl grid-cols-1 lg:grid-cols-12">
         {/* Left Column: Editorial Headline & Actions */}
         <div className="flex flex-col justify-between px-4 py-10 sm:px-6 lg:col-span-7 lg:px-10 lg:py-14">
