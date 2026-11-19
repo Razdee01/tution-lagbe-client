@@ -57,7 +57,7 @@ export default function TuitionSearchBar() {
   };
 
   return (
-    <section className="w-full bg-[#141519] py-12 text-[#FAF8F5] dark:bg-[#0D0E11] sm:py-16">
+    <section className="w-full bg-[#141519] py-16 text-[#FAF8F5] dark:bg-[#0D0E11] sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
         {/* Header Row */}
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">

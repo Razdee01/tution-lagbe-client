@@ -33,12 +33,12 @@ export default function HowItWorks() {
   return (
     <section
       aria-labelledby="how-it-works-heading"
-      className="w-full bg-[#111318] py-16 text-[#FAF8F5] dark:bg-[#0B0C0F] sm:py-24"
+      className="w-full border-t border-white/15 bg-[#111318] py-16 text-[#FAF8F5] dark:bg-[#0B0C0F] sm:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
         {/* Eyebrow & Main Heading */}
         <p className="font-manrope text-[11px] font-extrabold tracking-[0.18em] uppercase text-brand-orange">
-          HOW IT WORKS / 03
+          HOW IT WORKS 
         </p>
 
         <h2

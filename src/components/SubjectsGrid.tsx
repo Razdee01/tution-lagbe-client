@@ -123,7 +123,7 @@ export default function SubjectsGrid() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
         {/* Eyebrow & Section Title */}
         <p className="font-manrope text-[11px] font-extrabold tracking-[0.18em] uppercase text-brand-orange">
-          SUBJECTS / 04
+          SUBJECTS 
         </p>
 
         <h2

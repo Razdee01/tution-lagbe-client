@@ -3,10 +3,6 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 
-interface BannerProps {
-  imageSrc?: string;
-  imageAlt?: string;
-}
 
 export default function Banner() {
   return (
@@ -16,7 +12,7 @@ export default function Banner() {
         <div className="flex flex-col justify-between px-4 py-10 sm:px-6 lg:col-span-7 lg:px-10 lg:py-14">
           <div>
             <p className="font-manrope text-xs font-bold tracking-[0.18em] uppercase text-muted-foreground">
-              THE MENTORLAGBE NETWORK / 01
+              THE MENTORLAGBE NETWORK 
             </p>
 
             <h1 className="mt-6 font-heading text-5xl leading-[0.98] font-extrabold tracking-tight text-foreground sm:text-6xl xl:text-[4.5rem]">
