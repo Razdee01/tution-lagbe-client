@@ -58,7 +58,7 @@ export default function PricingSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
         {/* Eyebrow & Main Headline */}
         <p className="font-manrope text-[11px] font-extrabold tracking-[0.18em] uppercase text-brand-orange">
-          PRICING / 06
+          PRICING 
         </p>
 
         <h2
@@ -71,7 +71,7 @@ export default function PricingSection() {
         </h2>
 
         {/* Editorial Pricing Comparison Matrix */}
-        <div className="mt-12">
+        <div className="">
           {/* Desktop Column Headers */}
           <div className="hidden grid-cols-12 items-end lg:grid">
             <div className="col-span-4 border-b border-foreground/70 pb-3 font-manrope text-[10px] font-extrabold tracking-[0.16em] uppercase text-muted-foreground">

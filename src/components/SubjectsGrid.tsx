@@ -141,7 +141,7 @@ export default function SubjectsGrid() {
             <Link
               key={item.id}
               href={item.href}
-              className={`group relative flex justify-between p-6 transition-colors duration-200 hover:!bg-brand-orange hover:!text-[#141519] sm:p-7 ${
+              className={`group relative flex justify-between p-6 transition-colors duration-200 hover:bg-brand-orange hover:text-[#141519] sm:p-7 ${
                 item.isBottomBanner
                   ? "flex-col justify-between gap-4 sm:flex-row sm:items-end"
                   : "flex-col justify-between"

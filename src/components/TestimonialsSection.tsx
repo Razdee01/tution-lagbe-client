@@ -37,7 +37,7 @@ export default function TestimonialsSection() {
   return (
     <section
       aria-labelledby="testimonials-heading"
-      className="w-full  bg-surface-warm py-16 text-foreground transition-colors duration-200 sm:py-24"
+      className="w-full  bg-surface-warm  text-foreground transition-colors duration-200 "
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10">
         {/* Eyebrow & Headline */}
