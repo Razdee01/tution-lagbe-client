@@ -3,6 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, GraduationCap, UserCheck } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+
+import { useRouter } from "next/navigation";
 
 function GoogleLogo() {
   return (
@@ -28,19 +31,35 @@ function GoogleLogo() {
 }
 
 export default function SignUpPage() {
+    const router=useRouter()
+   
   const [selectedRole, setSelectedRole] = useState<"Student" | "Tutor">(
     "Student",
   );
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const formData = new FormData(e.currentTarget);
-    const entries = Object.fromEntries(formData.entries());
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    console.log("Sign Up Form Submit (Email & Password):", entries);
+    const { error } = await authClient.signUp.email({
+      name,
+      email,
+      password,
+    
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    router.push("/");
+    
   };
-
   const handleGoogleSignUp = () => {
     console.log("Sign Up with Google clicked", { role: selectedRole });
   };

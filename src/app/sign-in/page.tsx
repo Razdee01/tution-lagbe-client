@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { redirect } from "next/dist/server/api-utils";
 
 function GoogleLogo() {
   return (
@@ -28,14 +31,25 @@ function GoogleLogo() {
 }
 
 export default function SignInPage() {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+    const router=useRouter()
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-    const formData = new FormData(e.currentTarget);
-    const entries = Object.fromEntries(formData.entries());
+  const formData = new FormData(e.currentTarget);
 
-    console.log("Sign In Form Submit (Email & Password):", entries);
-  };
+  
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+
+  const { data} = await authClient.signIn.email({
+    
+    email,
+    password,
+  });
+  if(data){
+    router.push("/")
+  }
+};
 
   const handleGoogleSignIn = () => {
     console.log("Sign In with Google clicked");
