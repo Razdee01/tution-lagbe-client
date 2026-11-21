@@ -31,8 +31,8 @@ function GoogleLogo() {
 }
 
 export default function SignUpPage() {
-    const router=useRouter()
-   
+  const router = useRouter();
+
   const [selectedRole, setSelectedRole] = useState<"Student" | "Tutor">(
     "Student",
   );
@@ -49,7 +49,7 @@ export default function SignUpPage() {
       name,
       email,
       password,
-    
+      role: selectedRole.toLowerCase() as "student" | "tutor",
     });
 
     if (error) {
@@ -58,7 +58,6 @@ export default function SignUpPage() {
     }
 
     router.push("/");
-    
   };
   const handleGoogleSignUp = () => {
     console.log("Sign Up with Google clicked", { role: selectedRole });

@@ -6,15 +6,26 @@ const client = new MongoClient(process.env.MONGO_DB as string);
 const db = client.db("mentor-lagbe");
 
 export const auth = betterAuth({
-  database: mongodbAdapter(db, {
-    client,
-  }),
+  database: mongodbAdapter(db, { client }),
   emailAndPassword: {
     enabled: true,
   },
   user: {
     additionalFields: {
-      role: { type: "string", defaultValue: "student", input: true },
+      role: {
+        type: ["student", "tutor", "admin"],
+        defaultValue: "student",
+        input: true,
+      },
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => ({
+          data: { ...user, role: user.role === "tutor" ? "tutor" : "student" },
+        }),
+      },
     },
   },
 });

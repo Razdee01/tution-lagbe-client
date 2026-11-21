@@ -1,4 +1,5 @@
 import Banner from "@/components/Banner";
+import FeaturedTuition from "@/components/FeaturedTuition";
 import Footer from "@/components/Footer";
 import HowItWorks from "@/components/HowItWorks";
 import PricingSection from "@/components/PricingSection";
@@ -13,6 +14,7 @@ export default function Home() {
       <Banner></Banner>
       <SubjectMarquee></SubjectMarquee>
       <TuitionSearchBar></TuitionSearchBar>
+      <FeaturedTuition></FeaturedTuition>
       <HowItWorks></HowItWorks>
       <SubjectsGrid></SubjectsGrid>
       <TestimonialsSection></TestimonialsSection>
