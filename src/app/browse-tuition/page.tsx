@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   ChevronLeft,
@@ -34,9 +35,25 @@ const BrowseTuition = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Filter state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMode, setSelectedMode] = useState("ALL");
-  const [selectedSubject, setSelectedSubject] = useState("ALL");
+  // Read initial filters from the URL (set by the home page search bar)
+  const searchParams = useSearchParams();
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState(
+    searchParams.get("search") ?? "",
+  );
+  const [selectedMode, setSelectedMode] = useState(
+    searchParams.get("mode") ?? "ALL",
+  );
+  const [selectedSubject, setSelectedSubject] = useState(
+    searchParams.get("subject") ?? "ALL",
+  );
+  const [selectedClass, setSelectedClass] = useState(
+    searchParams.get("class") ?? "ALL",
+  );
+  const [selectedLocation, setSelectedLocation] = useState(
+    searchParams.get("location") ?? "ALL",
+  );
 
   // Dropdown options (loaded separately so they don't shrink when filtering)
   const [subjects, setSubjects] = useState<string[]>([]);
@@ -80,6 +97,9 @@ const BrowseTuition = () => {
           params.set("search", debouncedSearch.trim());
         if (selectedMode !== "ALL") params.set("mode", selectedMode);
         if (selectedSubject !== "ALL") params.set("subject", selectedSubject);
+        if (selectedClass !== "ALL") params.set("class", selectedClass);
+        if (selectedLocation !== "ALL")
+          params.set("location", selectedLocation);
 
         const res = await fetch(`${API_URL}/tuitions?${params.toString()}`, {
           cache: "no-store",
@@ -109,7 +129,14 @@ const BrowseTuition = () => {
 
     // Cancel the previous request when filters change or the component unmounts
     return () => controller.abort();
-  }, [debouncedSearch, selectedMode, selectedSubject, page]);
+  }, [
+    debouncedSearch,
+    selectedMode,
+    selectedSubject,
+    selectedClass,
+    selectedLocation,
+    page,
+  ]);
 
   // Handlers: any filter change sends the user back to page 1
   const handleSearchChange = (value: string) => {
@@ -131,18 +158,31 @@ const BrowseTuition = () => {
     setPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  const hasActiveFilters =
-    searchQuery.trim() !== "" ||
-    selectedMode !== "ALL" ||
-    selectedSubject !== "ALL";
-
-  const clearFilters = () => {
-    setSearchQuery("");
-    setSelectedMode("ALL");
-    setSelectedSubject("ALL");
+  const handleClassChange = (value: string) => {
+    setSelectedClass(value);
     setPage(1);
   };
+
+  const handleLocationChange = (value: string) => {
+    setSelectedLocation(value);
+    setPage(1);
+  };
+
+ const hasActiveFilters =
+   searchQuery.trim() !== "" ||
+   selectedMode !== "ALL" ||
+   selectedSubject !== "ALL" ||
+   selectedClass !== "ALL" ||
+   selectedLocation !== "ALL";
+
+ const clearFilters = () => {
+   setSearchQuery("");
+   setSelectedMode("ALL");
+   setSelectedSubject("ALL");
+   setSelectedClass("ALL");
+   setSelectedLocation("ALL");
+   setPage(1);
+ };
 
   return (
     <section
@@ -185,6 +225,28 @@ const BrowseTuition = () => {
               className="w-full rounded-xl bg-surface-warm py-3 pr-4 pl-11 font-manrope text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-orange focus:outline-none"
             />
           </div>
+          {(selectedClass !== "ALL" || selectedLocation !== "ALL") && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedClass !== "ALL" && (
+                <button
+                  type="button"
+                  onClick={() => handleClassChange("ALL")}
+                  className="rounded-md bg-card px-3 py-1.5 font-manrope text-[10px] font-extrabold tracking-[0.14em] uppercase text-foreground transition-colors hover:text-brand-orange"
+                >
+                  CLASS: {selectedClass} ✕
+                </button>
+              )}
+              {selectedLocation !== "ALL" && (
+                <button
+                  type="button"
+                  onClick={() => handleLocationChange("ALL")}
+                  className="rounded-md bg-card px-3 py-1.5 font-manrope text-[10px] font-extrabold tracking-[0.14em] uppercase text-foreground transition-colors hover:text-brand-orange"
+                >
+                  LOCATION: {selectedLocation} ✕
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Mode Filter */}
           <div className="md:col-span-3">
@@ -398,6 +460,6 @@ const BrowseTuition = () => {
       </div>
     </section>
   );
-};
+};;
 
 export default BrowseTuition;

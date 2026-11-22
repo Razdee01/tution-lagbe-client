@@ -24,8 +24,11 @@ const CLASSES = [
   "Skill & Language",
 ];
 
-const MODES = ["Online", "Offline (Home Tuition)", "Hybrid"];
-
+const MODES = [
+  { label: "Online", value: "ONLINE" },
+  { label: "Offline (Home Tuition)", value: "OFFLINE" },
+  { label: "Hybrid", value: "HYBRID" },
+];
 const LOCATIONS = [
   "Dhaka - Dhanmondi",
   "Dhaka - Uttara",
@@ -53,7 +56,9 @@ export default function TuitionSearchBar() {
     if (location) params.set("location", location);
 
     const queryString = params.toString();
-    router.push(queryString ? `/tuitions?${queryString}` : "/tuitions");
+    router.push(
+      queryString ? `/browse-tuition?${queryString}` : "/browse-tuition",
+    );
   };
 
   return (
@@ -158,11 +163,11 @@ export default function TuitionSearchBar() {
                 </option>
                 {MODES.map((item) => (
                   <option
-                    key={item}
-                    value={item}
+                    key={item.value}
+                    value={item.value}
                     className="bg-[#141519] text-[#FAF8F5]"
                   >
-                    {item}
+                    {item.label}
                   </option>
                 ))}
               </select>
