@@ -3,24 +3,11 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Search, SlidersHorizontal } from "lucide-react";
-
-interface TuitionItem {
-  _id?: string;
-  id?: string | number;
-  title: string;
-  subject?: string;
-  level?: string;
-  class?: string;
-  mode?: string;
-  location?: string;
-  salary?: number | string;
-  tutorName?: string;
-  bannerImage?: string;
-}
+import { CalendarDays, MapPin, Search, SlidersHorizontal } from "lucide-react";
+import { Tuition } from "@/type/type";
 
 const BrowseTuition = () => {
-  const [tuitions, setTuitions] = useState<TuitionItem[]>([]);
+  const [tuitions, setTuitions] = useState<Tuition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +30,7 @@ const BrowseTuition = () => {
         }
 
         const data = await res.json();
-        const list: TuitionItem[] = Array.isArray(data)
+        const list: Tuition[] = Array.isArray(data)
           ? data
           : Array.isArray(data?.tuitions)
             ? data.tuitions
@@ -125,19 +112,17 @@ const BrowseTuition = () => {
             <label htmlFor="mode-filter" className="sr-only">
               Filter by mode
             </label>
-            <div className="relative">
-              <select
-                id="mode-filter"
-                value={selectedMode}
-                onChange={(e) => setSelectedMode(e.target.value)}
-                className="w-full cursor-pointer rounded-xl bg-surface-warm px-4 py-3 font-manrope text-xs font-extrabold tracking-[0.12em] uppercase text-foreground focus:ring-2 focus:ring-brand-orange focus:outline-none"
-              >
-                <option value="ALL">ALL MODES</option>
-                <option value="ONLINE">ONLINE</option>
-                <option value="OFFLINE">OFFLINE</option>
-                <option value="HYBRID">HYBRID</option>
-              </select>
-            </div>
+            <select
+              id="mode-filter"
+              value={selectedMode}
+              onChange={(e) => setSelectedMode(e.target.value)}
+              className="w-full cursor-pointer rounded-xl bg-surface-warm px-4 py-3 font-manrope text-xs font-extrabold tracking-[0.12em] uppercase text-foreground focus:ring-2 focus:ring-brand-orange focus:outline-none"
+            >
+              <option value="ALL">ALL MODES</option>
+              <option value="ONLINE">ONLINE</option>
+              <option value="OFFLINE">OFFLINE</option>
+              <option value="HYBRID">HYBRID</option>
+            </select>
           </div>
 
           {/* Subject Filter */}
@@ -194,20 +179,19 @@ const BrowseTuition = () => {
           </div>
         ) : (
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayedTuitions.map((item, index) => {
-              const cardId = String(item._id ?? item.id ?? index);
-              const modeLabel = String(item.mode ?? "ONLINE").toUpperCase();
+            {displayedTuitions.map((item) => {
+              const modeLabel = item.mode.toUpperCase();
               const isOnline = modeLabel.includes("ONLINE");
               const metaLine = [
-                item.subject?.toUpperCase(),
-                (item.level || item.class)?.toUpperCase(),
+                item.subject.toUpperCase(),
+                item.classLevel.toUpperCase(),
               ]
                 .filter(Boolean)
                 .join(" / ");
 
               return (
                 <article
-                  key={cardId}
+                  key={item._id}
                   className="group flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-card transition-transform duration-200 hover:-translate-y-1"
                 >
                   {/* Top Media + Details */}
@@ -244,43 +228,40 @@ const BrowseTuition = () => {
                         {item.title}
                       </h2>
 
-                      {item.location && (
-                        <p className="mt-3 flex items-center gap-1.5 font-manrope text-xs font-medium text-muted-foreground">
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 font-manrope text-xs font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1.5 truncate">
                           <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-orange" />
                           <span className="truncate">{item.location}</span>
-                        </p>
-                      )}
+                        </span>
 
-                      {item.salary !== undefined && (
-                        <div className="mt-5 flex items-baseline gap-1.5 border-t border-foreground/10 pt-4">
-                          <span className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
-                            ৳{item.salary}
-                          </span>
-                          <span className="font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-muted-foreground">
-                            / MONTH
-                          </span>
-                        </div>
-                      )}
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          <CalendarDays className="h-3.5 w-3.5 shrink-0 text-brand-orange" />
+                          <span>{item.daysPerWeek} days/week</span>
+                        </span>
+                      </div>
+
+                      <div className="mt-5 flex items-baseline gap-1.5 border-t border-foreground/10 pt-4">
+                        <span className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
+                          ৳{item.monthlyFee.toLocaleString()}
+                        </span>
+                        <span className="font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-muted-foreground">
+                          / MONTH
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Card Footer */}
                   <div className="flex items-center justify-between border-t border-foreground/10 px-6 py-4">
                     <span className="truncate font-manrope text-xs font-medium text-muted-foreground">
-                      {item.tutorName ? (
-                        <>
-                          with{" "}
-                          <strong className="font-bold text-foreground">
-                            {item.tutorName}
-                          </strong>
-                        </>
-                      ) : (
-                        "Verified Listing"
-                      )}
+                      with{" "}
+                      <strong className="font-bold text-foreground">
+                        {item.tutorName}
+                      </strong>
                     </span>
 
                     <Link
-                      href={`/tuitions/${cardId}`}
+                      href={`/browse-tuition/${item._id}`}
                       className="inline-flex shrink-0 items-center gap-1 font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-foreground transition-colors group-hover:text-brand-orange"
                     >
                       <span>VIEW DETAILS</span>

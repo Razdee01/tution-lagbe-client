@@ -5,7 +5,6 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { redirect } from "next/dist/server/api-utils";
 
 function GoogleLogo() {
   return (
