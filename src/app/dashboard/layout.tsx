@@ -96,11 +96,11 @@ export default function DashboardLayout({
 
 
   // Placeholder profile summary — connect to your session later
-  const profile = {
-    name: "Mentor Lagbe User",
-    email: "user@example.com",
-    plan: "Free",
-  };
+ const profile = {
+   name: session?.user?.name ?? "User",
+   email: session?.user?.email ?? "",
+   plan: (session?.user as { plan?: string })?.plan ?? "Free",
+ };
 
   const links = navByRole[role];
 
