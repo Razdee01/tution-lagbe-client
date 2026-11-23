@@ -16,22 +16,27 @@ export default function PostTuitionPage() {
   const tutorName = session?.user?.name ?? "";
   const tutorEmail = session?.user?.email ?? "";
 
-  const uploadToImgBB = async (file: File) => {
-    const fd = new FormData();
-    fd.append("image", file);
-    const res = await fetch(
-      `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`,
-      {
-        method: "POST",
-        body: fd,
-      },
-    );
-    const data = await res.json();
-    if (!res.ok || !data?.success) {
-      throw new Error("Image upload failed");
-    }
-    return data.data.display_url as string;
-  };
+ const uploadToImgBB = async (file: File) => {
+   const apiKey = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+   if (!apiKey) {
+     throw new Error("Missing NEXT_PUBLIC_IMGBB_API_KEY in .env.local");
+   }
+
+   const fd = new FormData();
+   fd.append("image", file);
+
+   const res = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+     method: "POST",
+     body: fd,
+   });
+
+   const data = await res.json();
+   if (!res.ok || !data?.success) {
+     throw new Error(data?.error?.message || "Image upload failed");
+   }
+
+   return data.data.display_url as string;
+ };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -46,11 +51,18 @@ export default function PostTuitionPage() {
 
     setSubmitting(true);
 
-    let bannerImage = "";
-    if (imageFile) {
-      bannerImage = await uploadToImgBB(imageFile);
-    }
+   setSubmitting(true);
 
+   let bannerImage = "";
+   if (imageFile) {
+     try {
+       bannerImage = await uploadToImgBB(imageFile);
+     } catch (err) {
+       setSubmitting(false);
+       toast.error(err instanceof Error ? err.message : "Image upload failed");
+       return;
+     }
+   }
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/tuitions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

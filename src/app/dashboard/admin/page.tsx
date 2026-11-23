@@ -1,13 +1,30 @@
 import React from "react";
 
-const stats = [
-  { label: "TOTAL USERS", value: "0" },
-  { label: "TOTAL TUTORS", value: "0" },
-  { label: "PENDING / APPROVED", value: "0 / 0" },
-  { label: "STRIPE REVENUE", value: "$0" },
-];
+export default async function AdminDashboardPage() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/overview`, {
+    cache: "no-store",
+  });
+  const data = res.ok ? await res.json() : {};
 
-export default function AdminDashboardPage() {
+  const totalUsers = Number(data?.totalUsers ?? 0);
+  const totalTutors = Number(data?.totalTutors ?? 0);
+  const pendingCount = Number(data?.pendingTuitions ?? 0);
+  const approvedCount = Number(data?.approvedTuitions ?? 0);
+  const totalRevenue = Number(data?.totalRevenue ?? 0);
+
+  const stats = [
+    { label: "TOTAL USERS", value: String(totalUsers) },
+    { label: "TOTAL TUTORS", value: String(totalTutors) },
+    {
+      label: "PENDING / APPROVED TUITIONS",
+      value: `${pendingCount} / ${approvedCount}`,
+    },
+    {
+      label: "TOTAL STRIPE REVENUE",
+      value: `$${totalRevenue.toLocaleString()}`,
+    },
+  ];
+
   return (
     <div>
       <h1 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">

@@ -34,7 +34,6 @@ const BrowseTuition = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state
   // Read initial filters from the URL (set by the home page search bar)
   const searchParams = useSearchParams();
 
@@ -115,7 +114,6 @@ const BrowseTuition = () => {
         setTotal(json.total ?? 0);
         setTotalPages(json.totalPages ?? 1);
       } catch (err) {
-        // Ignore cancelled requests, a newer one is already running
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(
           err instanceof Error ? err.message : "Failed to load tuitions",
@@ -127,7 +125,6 @@ const BrowseTuition = () => {
 
     fetchTuitions();
 
-    // Cancel the previous request when filters change or the component unmounts
     return () => controller.abort();
   }, [
     debouncedSearch,
@@ -138,7 +135,6 @@ const BrowseTuition = () => {
     page,
   ]);
 
-  // Handlers: any filter change sends the user back to page 1
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setPage(1);
@@ -158,6 +154,7 @@ const BrowseTuition = () => {
     setPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
   const handleClassChange = (value: string) => {
     setSelectedClass(value);
     setPage(1);
@@ -168,21 +165,21 @@ const BrowseTuition = () => {
     setPage(1);
   };
 
- const hasActiveFilters =
-   searchQuery.trim() !== "" ||
-   selectedMode !== "ALL" ||
-   selectedSubject !== "ALL" ||
-   selectedClass !== "ALL" ||
-   selectedLocation !== "ALL";
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    selectedMode !== "ALL" ||
+    selectedSubject !== "ALL" ||
+    selectedClass !== "ALL" ||
+    selectedLocation !== "ALL";
 
- const clearFilters = () => {
-   setSearchQuery("");
-   setSelectedMode("ALL");
-   setSelectedSubject("ALL");
-   setSelectedClass("ALL");
-   setSelectedLocation("ALL");
-   setPage(1);
- };
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedMode("ALL");
+    setSelectedSubject("ALL");
+    setSelectedClass("ALL");
+    setSelectedLocation("ALL");
+    setPage(1);
+  };
 
   return (
     <section
@@ -225,8 +222,9 @@ const BrowseTuition = () => {
               className="w-full rounded-xl bg-surface-warm py-3 pr-4 pl-11 font-manrope text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-brand-orange focus:outline-none"
             />
           </div>
+
           {(selectedClass !== "ALL" || selectedLocation !== "ALL") && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 md:col-span-12">
               {selectedClass !== "ALL" && (
                 <button
                   type="button"
@@ -345,7 +343,6 @@ const BrowseTuition = () => {
                     key={item._id}
                     className="group flex h-full flex-col justify-between overflow-hidden rounded-2xl bg-card transition-transform duration-200 hover:-translate-y-1"
                   >
-                    {/* Top Media + Details */}
                     <div>
                       <div className="relative h-48 w-full overflow-hidden rounded-t-2xl bg-muted">
                         {item.bannerImage && (
@@ -402,7 +399,6 @@ const BrowseTuition = () => {
                       </div>
                     </div>
 
-                    {/* Card Footer */}
                     <div className="flex items-center justify-between border-t border-foreground/10 px-6 py-4">
                       <span className="truncate font-manrope text-xs font-medium text-muted-foreground">
                         with{" "}
@@ -424,7 +420,6 @@ const BrowseTuition = () => {
               })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <nav
                 aria-label="Pagination"
@@ -460,6 +455,6 @@ const BrowseTuition = () => {
       </div>
     </section>
   );
-};;
+};
 
 export default BrowseTuition;
