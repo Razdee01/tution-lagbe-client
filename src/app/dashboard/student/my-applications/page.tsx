@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Clock, Mail, User, Wallet } from "lucide-react";
 import { auth } from "@/lib/auth";
 import CancelApplicationButton from "@/components/CancelApplicationButton";
 
+
 interface ApplicationItem {
   _id?: string;
   id?: string;

@@ -28,16 +28,19 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          
           body: JSON.stringify({
             tuitionId: tuition._id,
             tuitionTitle: tuition.title,
+            subject: tuition.subject,
+            monthlyFee: tuition.monthlyFee,
             tutorEmail: tuition.tutorEmail,
-            studentId: session?.user?.id,
             studentName,
             studentEmail,
+            studentPhone: values.studentPhone,
             preferredSchedule: values.preferredSchedule,
-            message: values.message,
+            studentNote: values.studentNote,
+            status: "pending",
+            appliedAt: new Date().toISOString(),
           }),
         },
       );
@@ -131,6 +134,23 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
 
               <div>
                 <label
+                  htmlFor="studentPhone"
+                  className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-foreground"
+                >
+                  Phone Number
+                </label>
+                <input
+                  id="studentPhone"
+                  name="studentPhone"
+                  type="tel"
+                  required
+                  placeholder="e.g., 017XXXXXXXX"
+                  className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
                   htmlFor="preferredSchedule"
                   className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-foreground"
                 >
@@ -148,14 +168,14 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
 
               <div>
                 <label
-                  htmlFor="message"
+                  htmlFor="studentNote"
                   className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-foreground"
                 >
                   Note for Tutor
                 </label>
                 <textarea
-                  id="message"
-                  name="message"
+                  id="studentNote"
+                  name="studentNote"
                   rows={3}
                   required
                   placeholder="Note for tutor..."
