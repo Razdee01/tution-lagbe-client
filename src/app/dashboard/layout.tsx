@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 type Role = "student" | "tutor" | "admin";
 
@@ -74,11 +75,25 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const role: Role = pathname.startsWith("/dashboard/admin")
-    ? "admin"
-    : pathname.startsWith("/dashboard/tutor")
-      ? "tutor"
-      : "student";
+  // const role: Role = pathname.startsWith("/dashboard/admin")
+  //   ? "admin"
+  //   : pathname.startsWith("/dashboard/tutor")
+  //     ? "tutor"
+  //     : "student";
+ const { data: session, isPending } = authClient.useSession();
+
+ const role = session?.user?.role as Role | undefined;
+
+ // Loading state
+ if (isPending) {
+   return <div className="p-6">Loading...</div>;
+ }
+
+ // Not logged in or unknown role
+ if (!role || !(role in navByRole)) {
+   return <div className="p-6">Unauthorized</div>;
+ }
+
 
   // Placeholder profile summary — connect to your session later
   const profile = {

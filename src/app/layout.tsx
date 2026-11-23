@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bricolage_Grotesque, Manrope } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import { Toaster } from "sonner";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col font-sans">
         <NavBar />
         <main className="flex-1">{children}</main>
+        <Toaster />
       </body>
     </html>
   );

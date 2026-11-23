@@ -2,15 +2,23 @@
 
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { Tuition } from "@/type/type";
+import { authClient } from "@/lib/auth-client";
 
 export default function ApplyModal({ tuition }: { tuition: Tuition }) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const { data: session, isPending } = authClient.useSession();
+
+  const studentName = session?.user?.name ?? "";
+  const studentEmail = session?.user?.email ?? "";
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const values = Object.fromEntries(formData.entries());
 
     try {
@@ -20,17 +28,32 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          
           body: JSON.stringify({
             tuitionId: tuition._id,
             tuitionTitle: tuition.title,
             tutorEmail: tuition.tutorEmail,
-            ...values,
+            studentId: session?.user?.id,
+            studentName,
+            studentEmail,
+            preferredSchedule: values.preferredSchedule,
+            message: values.message,
           }),
         },
       );
 
-      if (!res.ok) throw new Error("Failed to apply");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.message || "Failed to apply");
+      }
+
+      form.reset();
       setOpen(false);
+      toast.success("Application submitted successfully!");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not submit application",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -72,34 +95,73 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
             </div>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              <input
-                name="studentName"
-                type="text"
-                required
-                placeholder="Your Full Name"
-                className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
-              />
-              <input
-                name="studentEmail"
-                type="email"
-                required
-                placeholder="Your Email"
-                className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
-              />
-              <input
-                name="preferredSchedule"
-                type="text"
-                required
-                placeholder="Preferred Days & Time (e.g., Sun, Tue · 5 PM)"
-                className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
-              />
-              <textarea
-                name="message"
-                rows={3}
-                required
-                placeholder="Note for tutor..."
-                className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
-              />
+              <div>
+                <label
+                  htmlFor="studentName"
+                  className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-muted-foreground"
+                >
+                  Full Name
+                </label>
+                <input
+                  id="studentName"
+                  name="studentName"
+                  type="text"
+                  readOnly
+                  value={isPending ? "Loading..." : studentName}
+                  className="w-full cursor-not-allowed rounded-xl bg-surface-warm/70 px-4 py-3 font-manrope text-sm text-muted-foreground focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="studentEmail"
+                  className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-muted-foreground"
+                >
+                  Email Address
+                </label>
+                <input
+                  id="studentEmail"
+                  name="studentEmail"
+                  type="email"
+                  readOnly
+                  value={isPending ? "Loading..." : studentEmail}
+                  className="w-full cursor-not-allowed rounded-xl bg-surface-warm/70 px-4 py-3 font-manrope text-sm text-muted-foreground focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="preferredSchedule"
+                  className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-foreground"
+                >
+                  Preferred Schedule
+                </label>
+                <input
+                  id="preferredSchedule"
+                  name="preferredSchedule"
+                  type="text"
+                  required
+                  placeholder="Preferred Days & Time (e.g., Sun, Tue · 5 PM)"
+                  className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="message"
+                  className="mb-1.5 block font-manrope text-[11px] font-bold tracking-[0.1em] uppercase text-foreground"
+                >
+                  Note for Tutor
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={3}
+                  required
+                  placeholder="Note for tutor..."
+                  className="w-full rounded-xl bg-surface-warm px-4 py-3 font-manrope text-sm focus:ring-2 focus:ring-brand-orange focus:outline-none"
+                />
+              </div>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
@@ -111,7 +173,7 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || isPending || !session?.user}
                   className="cursor-pointer rounded-xl bg-brand-orange px-6 py-3 font-manrope text-xs font-extrabold uppercase text-[#141519] disabled:opacity-60"
                 >
                   {submitting ? "SENDING..." : "SUBMIT"}
