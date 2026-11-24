@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { clearStoredToken } from "@/lib/jwt";
 
 const navLinks = [
   { label: "HOME", href: "/" },
@@ -90,6 +91,7 @@ export default function NavBar() {
 
   const handleSignOut = async () => {
     setMobileMenuOpen(false);
+    clearStoredToken();
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {

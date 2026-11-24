@@ -1,7 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface UserRow {
   _id: string;
@@ -12,35 +16,46 @@ interface UserRow {
 }
 
 export default function AdminUsersPage() {
+  const { data: session, isPending } = authClient.useSession();
+  const email = session?.user?.email ?? "";
+
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async (adminEmail: string) => {
     setLoading(true);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users`, {
+    await syncJwtToken(adminEmail);
+    const res = await fetch(`${API_URL}/admin/users`, {
       cache: "no-store",
+      headers: authHeaders(),
     });
     const data = res.ok ? await res.json() : [];
     setUsers(Array.isArray(data) ? data : (data?.users ?? []));
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
+    }
+    loadUsers(email);
+  }, [email, isPending, loadUsers]);
 
   const handleRoleChange = async (
     id: string,
     role: "student" | "tutor" | "admin",
   ) => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/admin/users/${id}/role`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
-      },
-    );
+    if (email) {
+      await syncJwtToken(email);
+    }
+
+    const res = await fetch(`${API_URL}/admin/users/${id}/role`, {
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ role }),
+    });
 
     if (!res.ok) {
       toast.error("Failed to update role");
@@ -57,7 +72,7 @@ export default function AdminUsersPage() {
         User Management
       </h1>
 
-      {loading ? (
+      {isPending || loading ? (
         <p className="mt-6 font-manrope text-sm text-muted-foreground">
           Loading users...
         </p>

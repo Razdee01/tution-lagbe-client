@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, GraduationCap, UserCheck } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { syncJwtToken } from "@/lib/jwt";
 
 import { useRouter } from "next/navigation";
 
@@ -57,6 +58,7 @@ export default function SignUpPage() {
       return;
     }
 
+    await syncJwtToken(email);
     router.push("/");
   };
   const handleGoogleSignUp = () => {

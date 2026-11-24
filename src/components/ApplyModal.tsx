@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { toast } from "sonner";
 import { Tuition } from "@/type/type";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 
 export default function ApplyModal({ tuition }: { tuition: Tuition }) {
   const [open, setOpen] = useState(false);
@@ -23,11 +24,15 @@ export default function ApplyModal({ tuition }: { tuition: Tuition }) {
 
     try {
       setSubmitting(true);
+      if (studentEmail) {
+        await syncJwtToken(studentEmail);
+      }
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/applications`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             tuitionId: tuition._id,
             tuitionTitle: tuition.title,

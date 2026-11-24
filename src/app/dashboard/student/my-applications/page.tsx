@@ -1,10 +1,21 @@
-import React from "react";
-import Link from "next/link";
-import { headers } from "next/headers";
-import { ArrowLeft, Calendar, Clock, Mail, User, Wallet } from "lucide-react";
-import { auth } from "@/lib/auth";
-import CancelApplicationButton from "@/components/CancelApplicationButton";
+"use client";
 
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Mail,
+  Trash2,
+  User,
+  Wallet,
+} from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApplicationItem {
   _id?: string;
@@ -19,6 +30,7 @@ interface ApplicationItem {
   createdAt?: string;
   status?: string;
   preferredSchedule?: string;
+  studentNote?: string;
   message?: string;
 }
 
@@ -44,34 +56,86 @@ function formatDate(dateStr?: string) {
   });
 }
 
-const MyApplicationspage = async () => {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  const email = session?.user?.email;
+export default function MyApplicationsPage() {
+  const { data: session, isPending } = authClient.useSession();
+  const email = session?.user?.email ?? "";
 
-  let applications: ApplicationItem[] = [];
+  const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
-  if (email) {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/applications/${encodeURIComponent(email)}`,
-      { cache: "no-store" },
-    );
-
-    if (res.ok) {
-      const data = await res.json();
-      const list = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.applications)
-          ? data.applications
-          : Array.isArray(data?.data)
-            ? data.data
-            : Array.isArray(data?.result)
-              ? data.result
-              : [];
-      applications = list;
+  useEffect(() => {
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
     }
-  }
+
+    const loadApplications = async () => {
+      try {
+        setLoading(true);
+        await syncJwtToken(email);
+
+        const res = await fetch(
+          `${API_URL}/applications/${encodeURIComponent(email)}`,
+          {
+            cache: "no-store",
+            headers: authHeaders(),
+          },
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.applications)
+              ? data.applications
+              : Array.isArray(data?.data)
+                ? data.data
+                : Array.isArray(data?.result)
+                  ? data.result
+                  : [];
+          setApplications(list);
+        }
+      } catch {
+        toast.error("Failed to load your applications");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadApplications();
+  }, [email, isPending]);
+
+  const handleCancel = async (applicationId: string) => {
+    if (!email) return;
+
+    try {
+      setCancelingId(applicationId);
+      await syncJwtToken(email);
+
+      const res = await fetch(`${API_URL}/applications/${applicationId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.message || "Failed to cancel application");
+      }
+
+      setApplications((prev) =>
+        prev.filter((item) => String(item._id ?? item.id) !== applicationId),
+      );
+      toast.success("Application canceled");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not cancel application",
+      );
+    } finally {
+      setCancelingId(null);
+    }
+  };
 
   return (
     <section className="w-full text-foreground">
@@ -101,7 +165,13 @@ const MyApplicationspage = async () => {
         </Link>
       </div>
 
-      {!email ? (
+      {isPending || loading ? (
+        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="h-64 animate-pulse rounded-2xl bg-card" />
+          ))}
+        </div>
+      ) : !email ? (
         <div className="mt-8 rounded-2xl bg-card p-8 text-center">
           <p className="font-heading text-xl font-extrabold">
             Sign in to view your applications
@@ -130,11 +200,12 @@ const MyApplicationspage = async () => {
           {applications.map((app, index) => {
             const appId = String(app._id ?? app.id ?? index);
             const rawStatus = (app.status ?? "pending").toLowerCase();
-            const isPending = rawStatus === "pending";
+            const isPendingStatus = rawStatus === "pending";
             const statusLabel =
               rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
             const tuitionTitle =
               app.tuitionTitle || app.title || "Untitled Tuition";
+            const note = app.studentNote || app.message;
 
             return (
               <div
@@ -161,7 +232,7 @@ const MyApplicationspage = async () => {
 
                   <div className="mt-4 space-y-2 rounded-xl bg-surface-warm p-4 font-manrope text-xs text-muted-foreground">
                     {app.tutorName && (
-                      <div className="flex items-center gap-2 text-foreground font-semibold">
+                      <div className="flex items-center gap-2 font-semibold text-foreground">
                         <User className="h-3.5 w-3.5 shrink-0 text-brand-orange" />
                         <span>{app.tutorName}</span>
                       </div>
@@ -180,9 +251,9 @@ const MyApplicationspage = async () => {
                     )}
                   </div>
 
-                  {app.message && (
+                  {note && (
                     <p className="mt-3 line-clamp-2 font-manrope text-xs leading-relaxed text-muted-foreground">
-                      &ldquo;{app.message}&rdquo;
+                      &ldquo;{note}&rdquo;
                     </p>
                   )}
                 </div>
@@ -208,8 +279,18 @@ const MyApplicationspage = async () => {
                       </Link>
                     )}
 
-                    {isPending && app._id && (
-                      <CancelApplicationButton applicationId={app._id} />
+                    {isPendingStatus && app._id && (
+                      <button
+                        type="button"
+                        disabled={cancelingId === app._id}
+                        onClick={() => handleCancel(app._id!)}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-red-500/15 px-3.5 py-2 font-manrope text-[11px] font-extrabold tracking-[0.12em] uppercase text-red-600 transition-opacity hover:opacity-85 disabled:opacity-50 dark:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>
+                          {cancelingId === app._id ? "CANCELING..." : "CANCEL"}
+                        </span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -220,6 +301,4 @@ const MyApplicationspage = async () => {
       )}
     </section>
   );
-};
-
-export default MyApplicationspage;
+}

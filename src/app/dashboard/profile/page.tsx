@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY ?? "";
@@ -42,9 +43,14 @@ export default function UpdateProfilePage() {
     const loadProfile = async () => {
       try {
         setLoadingProfile(true);
+        await syncJwtToken(email);
+
         const res = await fetch(
           `${API_URL}/users/profile/${encodeURIComponent(email)}`,
-          { cache: "no-store" },
+          {
+            cache: "no-store",
+            headers: authHeaders(),
+          },
         );
         const data = res.ok ? await res.json() : null;
 
@@ -137,12 +143,13 @@ export default function UpdateProfilePage() {
 
     try {
       setSaving(true);
+      await syncJwtToken(email);
 
       const res = await fetch(
         `${API_URL}/users/profile/${encodeURIComponent(email)}`,
         {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             name: name.trim(),
             phone: phone.trim(),
@@ -157,7 +164,6 @@ export default function UpdateProfilePage() {
         throw new Error(data?.message || "Failed to update profile");
       }
 
-      // Sync BetterAuth session so Navbar avatar & name update right away
       await authClient.updateUser({
         name: name.trim(),
         image: image.trim() || undefined,
@@ -194,7 +200,6 @@ export default function UpdateProfilePage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Card: Live Avatar & Role/Plan Summary */}
         <aside className="flex flex-col items-center rounded-2xl bg-card p-6 text-center lg:col-span-4">
           <div className="relative">
             <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-2xl bg-surface-warm">
@@ -262,12 +267,10 @@ export default function UpdateProfilePage() {
           </p>
         </aside>
 
-        {/* Right Card: Profile Edit Form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-5 rounded-2xl bg-card p-6 sm:p-8 lg:col-span-8"
         >
-          {/* Full Name */}
           <div>
             <label
               htmlFor="profile-name"
@@ -289,7 +292,6 @@ export default function UpdateProfilePage() {
             </div>
           </div>
 
-          {/* Read-only Email */}
           <div>
             <label
               htmlFor="profile-email"
@@ -309,7 +311,6 @@ export default function UpdateProfilePage() {
             </div>
           </div>
 
-          {/* Phone Number */}
           <div>
             <label
               htmlFor="profile-phone"
@@ -330,7 +331,6 @@ export default function UpdateProfilePage() {
             </div>
           </div>
 
-          {/* Bio */}
           <div>
             <label
               htmlFor="profile-bio"
@@ -352,7 +352,6 @@ export default function UpdateProfilePage() {
             />
           </div>
 
-          {/* Submit */}
           <div className="pt-2">
             <button
               type="submit"

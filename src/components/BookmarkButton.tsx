@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Bookmark } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const FREE_BOOKMARK_LIMIT = 5;
@@ -28,12 +29,22 @@ export default function BookmarkButton({ tuitionId }: { tuitionId: string }) {
       return;
     }
 
-    fetch(`${API_URL}/users/profile/${encodeURIComponent(userEmail)}`, {
-      cache: "no-store",
-    })
-      .then((res) => (res.ok ? res.json() : null))
+    let active = true;
+
+    (async () => {
+      await syncJwtToken(userEmail);
+      const res = await fetch(
+        `${API_URL}/users/profile/${encodeURIComponent(userEmail)}`,
+        {
+          cache: "no-store",
+          headers: authHeaders(),
+        },
+      );
+      if (!res.ok) return null;
+      return res.json();
+    })()
       .then((data) => {
-        if (!data) return;
+        if (!active || !data) return;
         setUserPlan(String(data.plan || "free").toLowerCase());
         setBookmarkedIds(
           Array.isArray(data.bookmarkedTuitionIds)
@@ -42,6 +53,10 @@ export default function BookmarkButton({ tuitionId }: { tuitionId: string }) {
         );
       })
       .catch(() => {});
+
+    return () => {
+      active = false;
+    };
   }, [userEmail]);
 
   const isBookmarked = bookmarkedIds.includes(tuitionId);
@@ -71,9 +86,11 @@ export default function BookmarkButton({ tuitionId }: { tuitionId: string }) {
 
     try {
       setToggling(true);
+      await syncJwtToken(userEmail);
+
       const res = await fetch(`${API_URL}/users/bookmarks/toggle`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ email: userEmail, tuitionId }),
       });
 

@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { syncJwtToken } from "@/lib/jwt";
 import { useRouter } from "next/navigation";
 
 function GoogleLogo() {
@@ -30,25 +31,24 @@ function GoogleLogo() {
 }
 
 export default function SignInPage() {
-    const router=useRouter()
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
+  const router = useRouter();
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
 
-  const formData = new FormData(e.currentTarget);
+    const formData = new FormData(e.currentTarget);
 
-  
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-  const { data} = await authClient.signIn.email({
-    
-    email,
-    password,
-  });
-  if(data){
-    router.push("/")
-  }
-};
+    const { data } = await authClient.signIn.email({
+      email,
+      password,
+    });
+    if (data) {
+      await syncJwtToken(email);
+      router.push("/");
+    }
+  };
 
   const handleGoogleSignIn = () => {
     console.log("Sign In with Google clicked");

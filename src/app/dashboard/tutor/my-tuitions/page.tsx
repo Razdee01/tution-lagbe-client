@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface TuitionItem {
   _id: string;
@@ -17,40 +20,48 @@ interface TuitionItem {
 }
 
 export default function MyTuitionsPage() {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const email = session?.user?.email ?? "";
 
   const [tuitions, setTuitions] = useState<TuitionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<TuitionItem | null>(null);
 
-  const loadTuitions = async (tutorEmail: string) => {
+  const loadTuitions = useCallback(async (tutorEmail: string) => {
     setLoading(true);
+    await syncJwtToken(tutorEmail);
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/tuitions/tutor/${encodeURIComponent(tutorEmail)}`,
-      { cache: "no-store" },
+      `${API_URL}/tuitions/tutor/${encodeURIComponent(tutorEmail)}`,
+      {
+        cache: "no-store",
+        headers: authHeaders(),
+      },
     );
     const data = res.ok ? await res.json() : [];
     setTuitions(Array.isArray(data) ? data : (data?.tuitions ?? []));
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    if (email) {
-      loadTuitions(email);
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
     }
-  }, [email]);
+    loadTuitions(email);
+  }, [email, isPending, loadTuitions]);
 
   const handleToggleActive = async (item: TuitionItem) => {
     const nextActive = !(item.isActive !== false);
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/tuitions/${item._id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: nextActive }),
-      },
-    );
+    if (email) {
+      await syncJwtToken(email);
+    }
+
+    const res = await fetch(`${API_URL}/tuitions/${item._id}`, {
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ isActive: nextActive }),
+    });
     if (!res.ok) {
       toast.error("Failed to update status");
       return;
@@ -58,14 +69,18 @@ export default function MyTuitionsPage() {
     toast.success(
       nextActive ? "Tuition marked Active" : "Tuition marked Closed",
     );
-    loadTuitions(email);
+    if (email) loadTuitions(email);
   };
 
   const handleDelete = async (id: string) => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/tuitions/${id}`,
-      { method: "DELETE" },
-    );
+    if (email) {
+      await syncJwtToken(email);
+    }
+
+    const res = await fetch(`${API_URL}/tuitions/${id}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
     if (!res.ok) {
       toast.error("Failed to delete tuition");
       return;
@@ -79,19 +94,20 @@ export default function MyTuitionsPage() {
     if (!editing) return;
     const fd = new FormData(e.currentTarget);
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/tuitions/${editing._id}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: fd.get("title"),
-          subject: fd.get("subject"),
-          classLevel: fd.get("classLevel"),
-          monthlyFee: Number(fd.get("monthlyFee")),
-        }),
-      },
-    );
+    if (email) {
+      await syncJwtToken(email);
+    }
+
+    const res = await fetch(`${API_URL}/tuitions/${editing._id}`, {
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({
+        title: fd.get("title"),
+        subject: fd.get("subject"),
+        classLevel: fd.get("classLevel"),
+        monthlyFee: Number(fd.get("monthlyFee")),
+      }),
+    });
 
     if (!res.ok) {
       toast.error("Failed to update tuition");
@@ -99,7 +115,7 @@ export default function MyTuitionsPage() {
     }
     toast.success("Tuition updated");
     setEditing(null);
-    loadTuitions(email);
+    if (email) loadTuitions(email);
   };
 
   return (
@@ -116,7 +132,7 @@ export default function MyTuitionsPage() {
         </Link>
       </div>
 
-      {loading ? (
+      {isPending || loading ? (
         <p className="mt-6 font-manrope text-sm text-muted-foreground">
           Loading tuitions...
         </p>

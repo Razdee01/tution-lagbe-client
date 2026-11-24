@@ -1,29 +1,69 @@
-import React from "react";
+"use client";
 
-export default async function AdminDashboardPage() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/overview`, {
-    cache: "no-store",
+import React, { useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+export default function AdminDashboardPage() {
+  const { data: session, isPending } = authClient.useSession();
+  const email = session?.user?.email ?? "";
+
+  const [overview, setOverview] = useState({
+    totalUsers: 0,
+    totalTutors: 0,
+    pendingTuitions: 0,
+    approvedTuitions: 0,
+    totalRevenue: 0,
   });
-  const data = res.ok ? await res.json() : {};
- 
-  
+  const [loading, setLoading] = useState(true);
 
-  const totalUsers = Number(data?.totalUsers ?? 0);
-  const totalTutors = Number(data?.totalTutors ?? 0);
-  const pendingCount = Number(data?.pendingTuitions ?? 0);
-  const approvedCount = Number(data?.approvedTuitions ?? 0);
-  const totalRevenue = Number(data?.totalRevenue ?? 0);
+  useEffect(() => {
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
+    }
+
+    const loadOverview = async () => {
+      try {
+        setLoading(true);
+        await syncJwtToken(email);
+
+        const res = await fetch(`${API_URL}/admin/overview`, {
+          cache: "no-store",
+          headers: authHeaders(),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setOverview({
+            totalUsers: Number(data?.totalUsers ?? 0),
+            totalTutors: Number(data?.totalTutors ?? 0),
+            pendingTuitions: Number(data?.pendingTuitions ?? 0),
+            approvedTuitions: Number(data?.approvedTuitions ?? 0),
+            totalRevenue: Number(data?.totalRevenue ?? 0),
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOverview();
+  }, [email, isPending]);
 
   const stats = [
-    { label: "TOTAL USERS", value: String(totalUsers) },
-    { label: "TOTAL TUTORS", value: String(totalTutors) },
+    { label: "TOTAL USERS", value: String(overview.totalUsers) },
+    { label: "TOTAL TUTORS", value: String(overview.totalTutors) },
     {
       label: "PENDING / APPROVED TUITIONS",
-      value: `${pendingCount} / ${approvedCount}`,
+      value: `${overview.pendingTuitions} / ${overview.approvedTuitions}`,
     },
     {
       label: "TOTAL STRIPE REVENUE",
-      value: `$${totalRevenue.toLocaleString()}`,
+      value: `$${overview.totalRevenue.toLocaleString()}`,
     },
   ];
 
@@ -33,18 +73,26 @@ export default async function AdminDashboardPage() {
         Admin Overview
       </h1>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
-          <div key={stat.label} className="rounded-2xl bg-card p-6">
-            <p className="font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-muted-foreground">
-              {stat.label}
-            </p>
-            <p className="mt-2 font-heading text-3xl font-extrabold text-foreground">
-              {stat.value}
-            </p>
-          </div>
-        ))}
-      </div>
+      {isPending || loading ? (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="h-28 animate-pulse rounded-2xl bg-card" />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat) => (
+            <div key={stat.label} className="rounded-2xl bg-card p-6">
+              <p className="font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-muted-foreground">
+                {stat.label}
+              </p>
+              <p className="mt-2 font-heading text-3xl font-extrabold text-foreground">
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

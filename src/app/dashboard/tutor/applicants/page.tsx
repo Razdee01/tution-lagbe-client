@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface ApplicantItem {
   _id: string;
@@ -16,38 +19,46 @@ interface ApplicantItem {
 }
 
 export default function TutorApplicantsPage() {
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const email = session?.user?.email ?? "";
 
   const [applicants, setApplicants] = useState<ApplicantItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadApplicants = async (tutorEmail: string) => {
+  const loadApplicants = useCallback(async (tutorEmail: string) => {
     setLoading(true);
+    await syncJwtToken(tutorEmail);
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/applications/tutor/${encodeURIComponent(tutorEmail)}`,
-      { cache: "no-store" },
+      `${API_URL}/applications/tutor/${encodeURIComponent(tutorEmail)}`,
+      {
+        cache: "no-store",
+        headers: authHeaders(),
+      },
     );
     const data = res.ok ? await res.json() : [];
     setApplicants(Array.isArray(data) ? data : (data?.applications ?? []));
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    if (email) {
-      loadApplicants(email);
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
     }
-  }, [email]);
+    loadApplicants(email);
+  }, [email, isPending, loadApplicants]);
 
   const handleStatus = async (id: string, status: "accepted" | "rejected") => {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/applications/${id}/status`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      },
-    );
+    if (email) {
+      await syncJwtToken(email);
+    }
+
+    const res = await fetch(`${API_URL}/applications/${id}/status`, {
+      method: "PATCH",
+      headers: authHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ status }),
+    });
 
     if (!res.ok) {
       toast.error(`Failed to mark as ${status}`);
@@ -66,7 +77,7 @@ export default function TutorApplicantsPage() {
         Applicants
       </h1>
 
-      {loading ? (
+      {isPending || loading ? (
         <p className="mt-6 font-manrope text-sm text-muted-foreground">
           Loading applicants...
         </p>

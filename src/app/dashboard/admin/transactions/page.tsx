@@ -1,4 +1,11 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 interface PaymentItem {
   _id?: string;
@@ -11,15 +18,43 @@ interface PaymentItem {
   paidAt?: string;
 }
 
-export default async function AdminTransactionsPage() {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/admin/transactions`,
-    { cache: "no-store" },
-  );
-  const data = res.ok ? await res.json() : [];
-  const payments: PaymentItem[] = Array.isArray(data)
-    ? data
-    : (data?.payments ?? []);
+export default function AdminTransactionsPage() {
+  const { data: session, isPending } = authClient.useSession();
+  const email = session?.user?.email ?? "";
+
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isPending) return;
+    if (!email) {
+      setLoading(false);
+      return;
+    }
+
+    const loadTransactions = async () => {
+      try {
+        setLoading(true);
+        await syncJwtToken(email);
+
+        const res = await fetch(`${API_URL}/admin/transactions`, {
+          cache: "no-store",
+          headers: authHeaders(),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setPayments(Array.isArray(data) ? data : (data?.payments ?? []));
+        }
+      } catch {
+        toast.error("Failed to load transactions");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTransactions();
+  }, [email, isPending]);
 
   return (
     <div>
@@ -27,7 +62,13 @@ export default async function AdminTransactionsPage() {
         Transactions
       </h1>
 
-      {payments.length === 0 ? (
+      {isPending || loading ? (
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="h-24 animate-pulse rounded-2xl bg-card" />
+          ))}
+        </div>
+      ) : payments.length === 0 ? (
         <div className="mt-6 rounded-2xl bg-card p-8 text-center">
           <p className="font-heading text-xl font-extrabold">
             No transactions yet

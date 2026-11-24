@@ -17,6 +17,7 @@ import {
   Users,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 
 type Role = "student" | "tutor" | "admin";
 
@@ -107,15 +108,28 @@ export default function DashboardLayout({
     const email = session?.user?.email;
     if (!email) return;
 
-    fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/users/profile/${encodeURIComponent(email)}`,
-      { cache: "no-store" },
-    )
-      .then((res) => (res.ok ? res.json() : null))
+    let active = true;
+
+    (async () => {
+      await syncJwtToken(email);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/users/profile/${encodeURIComponent(email)}`,
+        {
+          cache: "no-store",
+          headers: authHeaders(),
+        },
+      );
+      if (!res.ok) return null;
+      return res.json();
+    })()
       .then((data) => {
-        if (data) setDbProfile(data);
+        if (active && data) setDbProfile(data);
       })
       .catch(() => {});
+
+    return () => {
+      active = false;
+    };
   }, [session?.user?.email]);
 
   const role = session?.user?.role as Role | undefined;
@@ -143,7 +157,6 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen w-full bg-surface-warm text-foreground">
       <div className="flex min-h-screen w-full flex-col lg:flex-row">
-        {/* Sidebar (~20% width on desktop when open) */}
         {sidebarOpen && (
           <aside className="flex w-full shrink-0 flex-col justify-between bg-card p-5 lg:w-[20%] lg:min-w-[230px]">
             <div>
@@ -195,7 +208,6 @@ export default function DashboardLayout({
               </nav>
             </div>
 
-            {/* User Profile Summary */}
             <Link
               href="/dashboard/profile"
               className="mt-8 block rounded-2xl bg-surface-warm p-4 transition-colors hover:bg-surface-warm/80"
@@ -222,7 +234,6 @@ export default function DashboardLayout({
           </aside>
         )}
 
-        {/* Main Content (~80% width on desktop) */}
         <div
           className={`min-w-0 flex-1 ${sidebarOpen ? "lg:w-[80%]" : "w-full"}`}
         >

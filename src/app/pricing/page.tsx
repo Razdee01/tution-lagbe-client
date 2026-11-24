@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUpRight, Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 
 type BillingCycle = "monthly" | "yearly";
 type RoleTab = "all" | "students" | "tutors";
@@ -129,12 +130,13 @@ export default function PricingPage() {
 
     try {
       setLoadingPlanId(plan.id);
+      await syncJwtToken(userEmail);
 
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/payments/create-checkout-session`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             userEmail,
             userName: session?.user?.name ?? "",

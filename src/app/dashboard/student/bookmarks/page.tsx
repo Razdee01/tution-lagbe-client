@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
+import { authHeaders, syncJwtToken } from "@/lib/jwt";
 import { Tuition } from "@/type/type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -37,12 +38,16 @@ export default function StudentBookmarksPage() {
     const loadData = async () => {
       try {
         setLoading(true);
+        await syncJwtToken(userEmail);
+
         const [bookmarksRes, profileRes] = await Promise.all([
           fetch(`${API_URL}/users/bookmarks/${encodeURIComponent(userEmail)}`, {
             cache: "no-store",
+            headers: authHeaders(),
           }),
           fetch(`${API_URL}/users/profile/${encodeURIComponent(userEmail)}`, {
             cache: "no-store",
+            headers: authHeaders(),
           }),
         ]);
 
@@ -70,9 +75,11 @@ export default function StudentBookmarksPage() {
 
     try {
       setRemovingId(tuitionId);
+      await syncJwtToken(userEmail);
+
       const res = await fetch(`${API_URL}/users/bookmarks/toggle`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ email: userEmail, tuitionId }),
       });
 
@@ -97,7 +104,6 @@ export default function StudentBookmarksPage() {
 
   return (
     <div>
-      {/* Header & Free vs Pro Quota Banner */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="font-manrope text-[10px] font-extrabold tracking-[0.16em] uppercase text-brand-orange">
@@ -143,7 +149,6 @@ export default function StudentBookmarksPage() {
         </div>
       </div>
 
-      {/* Free Limit Notice */}
       {atFreeLimit && (
         <div className="mt-6 flex flex-col justify-between gap-3 rounded-2xl bg-card p-5 sm:flex-row sm:items-center">
           <p className="font-manrope text-xs leading-relaxed text-muted-foreground">
@@ -162,7 +167,6 @@ export default function StudentBookmarksPage() {
         </div>
       )}
 
-      {/* Content States */}
       {loading ? (
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, idx) => (
