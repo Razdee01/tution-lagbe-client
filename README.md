@@ -13,12 +13,11 @@ MentorLagbe makes it easy for students to find the right tutor and for tutors to
 > **TODO before submission:** replace with the deployed frontend URL.
 
 - Frontend (Next.js): `https://<your-deployed-client-url>`
-- Backend API (Express): `https://<your-deployed-api-url>`
+- Backend API (Express): `https://tution-lagbe-server.vercel.app/`
 - Local development: `http://localhost:3000`
 
-## Demo credentials
+##  credentials
 
-> **TODO before submission:** replace these placeholders with the real demo accounts.
 
 | Role | Email | Password |
 | --- | --- | --- |
