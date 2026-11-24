@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, GraduationCap, UserCheck } from "lucide-react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { syncJwtToken } from "@/lib/jwt";
 
@@ -54,15 +55,23 @@ export default function SignUpPage() {
     });
 
     if (error) {
-      alert(error.message);
+      toast.error(error.message ?? "Could not create your account.");
       return;
     }
 
     await syncJwtToken(email);
+    toast.success("Account created! Welcome to MentorLagbe.");
     router.push("/");
   };
-  const handleGoogleSignUp = () => {
-    console.log("Sign Up with Google clicked", { role: selectedRole });
+  const handleGoogleSignUp = async () => {
+    try {
+      sessionStorage.setItem("pending_role", selectedRole.toLowerCase());
+    } catch {}
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/auth/callback",
+    });
+    if (error) toast.error(error.message ?? "Google sign up failed.");
   };
 
   return (

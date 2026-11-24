@@ -83,7 +83,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-2.5 font-manrope text-xs font-medium text-[#FAF8F5]/85 sm:text-sm">
               <li>
                 <Link
-                  href="/tuitions"
+                  href="/browse-tuition"
                   className="transition-colors hover:text-brand-orange"
                 >
                   Browse Tuitions

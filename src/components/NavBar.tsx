@@ -16,6 +16,7 @@ import {
   UserCog,
   X,
 } from "lucide-react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { clearStoredToken } from "@/lib/jwt";
 
@@ -91,11 +92,15 @@ export default function NavBar() {
 
   const handleSignOut = async () => {
     setMobileMenuOpen(false);
-    clearStoredToken();
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push("/sign-in"); // redirect to sign-in page
+          clearStoredToken();
+          toast.success("Signed out successfully.");
+          router.push("/sign-in");
+        },
+        onError: () => {
+          toast.error("Could not sign out. Please try again.");
         },
       },
     });

@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, CalendarDays, Mail, MapPin, User } from "lucide-react";
 import { Tuition } from "@/type/type";
-import ApplyModal from "@/components/ApplyModal";
+import ApplyGate from "@/components/ApplyGate";
 import BookmarkButton from "@/components/BookmarkButton";
 
 const TuitionDetailsPage = async ({
@@ -120,7 +120,7 @@ const TuitionDetailsPage = async ({
 
               <div className="flex flex-wrap items-center gap-3">
                 <BookmarkButton tuitionId={tuitionId} />
-                <ApplyModal tuition={tuition} />
+                <ApplyGate tuition={tuition} />
               </div>
             </div>
           </div>

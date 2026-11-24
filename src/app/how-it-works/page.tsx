@@ -149,7 +149,7 @@ export default function HowItWorksPage() {
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/tuitions"
+                  href="/browse-tuition"
                   className="inline-flex items-center gap-2 bg-brand-orange px-5 py-3.5 font-manrope text-xs font-extrabold tracking-[0.14em] uppercase text-[#141519] transition-transform duration-150 hover:-translate-y-0.5"
                 >
                   <span>BROWSE TUITIONS</span>

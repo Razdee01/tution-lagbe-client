@@ -63,7 +63,7 @@ const FeaturedTuition = async () => {
           </div>
 
           <Link
-            href="/tuitions"
+            href="/browse-tuition"
             className="inline-flex items-center gap-1.5 font-manrope text-[11px] font-extrabold tracking-[0.16em] uppercase text-foreground transition-colors hover:text-brand-orange"
           >
             <span>BROWSE ALL</span>
@@ -159,7 +159,7 @@ const FeaturedTuition = async () => {
                   </span>
 
                   <Link
-                    href={`/tuitions/${cardId}`}
+                    href={`/browse-tuition/${cardId}`}
                     className="inline-flex shrink-0 items-center gap-1 font-manrope text-[10px] font-extrabold tracking-[0.15em] uppercase text-foreground transition-colors group-hover:text-brand-orange"
                   >
                     <span>VIEW DETAILS</span>

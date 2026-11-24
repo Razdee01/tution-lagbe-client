@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { syncJwtToken } from "@/lib/jwt";
 import { useRouter } from "next/navigation";
@@ -40,18 +41,29 @@ export default function SignInPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    const { data } = await authClient.signIn.email({
+    const { data, error } = await authClient.signIn.email({
       email,
       password,
     });
+
+    if (error) {
+      toast.error(error.message ?? "Invalid email or password.");
+      return;
+    }
+
     if (data) {
       await syncJwtToken(email);
+      toast.success("Signed in successfully!");
       router.push("/");
     }
   };
 
-  const handleGoogleSignIn = () => {
-    console.log("Sign In with Google clicked");
+  const handleGoogleSignIn = async () => {
+    const { error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/auth/callback",
+    });
+    if (error) toast.error(error.message ?? "Google sign in failed.");
   };
 
   return (
