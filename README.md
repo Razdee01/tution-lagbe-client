@@ -10,9 +10,8 @@ MentorLagbe makes it easy for students to find the right tutor and for tutors to
 
 ## Live URL
 
-> **TODO before submission:** replace with the deployed frontend URL.
 
-- Frontend (Next.js): `https://<your-deployed-client-url>`
+- Frontend (Next.js): `https://tution-lagbe-client.vercel.app/`
 - Backend API (Express): `https://tution-lagbe-server.vercel.app/`
 - Local development: `http://localhost:3000`
 
