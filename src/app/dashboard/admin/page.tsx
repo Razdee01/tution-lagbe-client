@@ -5,6 +5,8 @@ export default async function AdminDashboardPage() {
     cache: "no-store",
   });
   const data = res.ok ? await res.json() : {};
+ 
+  
 
   const totalUsers = Number(data?.totalUsers ?? 0);
   const totalTutors = Number(data?.totalTutors ?? 0);

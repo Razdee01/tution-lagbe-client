@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -74,33 +74,47 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { data: session, isPending } = authClient.useSession();
 
-  // const role: Role = pathname.startsWith("/dashboard/admin")
-  //   ? "admin"
-  //   : pathname.startsWith("/dashboard/tutor")
-  //     ? "tutor"
-  //     : "student";
- const { data: session, isPending } = authClient.useSession();
+  const [dbProfile, setDbProfile] = useState<{
+    name?: string;
+    plan?: string;
+  } | null>(null);
 
- const role = session?.user?.role as Role | undefined;
+  useEffect(() => {
+    const email = session?.user?.email;
+    if (!email) return;
 
- // Loading state
- if (isPending) {
-   return <div className="p-6">Loading...</div>;
- }
+    fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/users/profile/${encodeURIComponent(email)}`,
+      { cache: "no-store" },
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setDbProfile(data);
+      })
+      .catch(() => {});
+  }, [session?.user?.email]);
 
- // Not logged in or unknown role
- if (!role || !(role in navByRole)) {
-   return <div className="p-6">Unauthorized</div>;
- }
+  const role = session?.user?.role as Role | undefined;
 
+  if (isPending) {
+    return <div className="p-6">Loading...</div>;
+  }
 
-  // Placeholder profile summary — connect to your session later
- const profile = {
-   name: session?.user?.name ?? "User",
-   email: session?.user?.email ?? "",
-   plan: (session?.user as { plan?: string })?.plan ?? "Free",
- };
+  if (!role || !(role in navByRole)) {
+    return <div className="p-6">Unauthorized</div>;
+  }
+
+  const rawPlan =
+    dbProfile?.plan ?? (session?.user as { plan?: string })?.plan ?? "Free";
+  const formattedPlan = rawPlan.toLowerCase() === "pro" ? "Pro" : "Free";
+
+  const profile = {
+    name: dbProfile?.name || session?.user?.name || "User",
+    email: session?.user?.email ?? "",
+    plan: formattedPlan,
+  };
 
   const links = navByRole[role];
 
@@ -169,7 +183,13 @@ export default function DashboardLayout({
               </p>
               <div className="mt-3 flex items-center justify-between gap-2 font-manrope text-[10px] font-extrabold tracking-[0.14em] uppercase">
                 <span className="text-brand-orange">{role}</span>
-                <span className="rounded-md bg-card px-2 py-1 text-foreground">
+                <span
+                  className={`rounded-md px-2 py-1 ${
+                    profile.plan === "Pro"
+                      ? "bg-brand-orange text-[#141519]"
+                      : "bg-card text-foreground"
+                  }`}
+                >
                   {profile.plan}
                 </span>
               </div>

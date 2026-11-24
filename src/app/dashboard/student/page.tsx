@@ -17,6 +17,8 @@ export default async function StudentDashboardPage() {
     : null;
 
   const applications = res?.ok ? await res.json() : [];
+  console.log(applications,"hello");
+  
 
 
   const totalApplications = applications.length;

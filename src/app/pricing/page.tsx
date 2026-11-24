@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowUpRight, Check, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 
 type BillingCycle = "monthly" | "yearly";
 type RoleTab = "all" | "students" | "tutors";
@@ -104,26 +107,58 @@ const plans: PricingPlan[] = [
 ];
 
 export default function PricingPage() {
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
+
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
   const [roleFilter, setRoleFilter] = useState<RoleTab>("all");
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
-  const handleSubscribe = (plan: PricingPlan) => {
-    const priceId =
-      billingCycle === "monthly"
-        ? plan.stripePriceIdMonthly
-        : plan.stripePriceIdYearly;
+  const handleSubscribe = async (plan: PricingPlan) => {
+    const userEmail = session?.user?.email;
+    if (!userEmail) {
+      toast.error("Please sign in first to upgrade your plan.");
+      router.push("/sign-in");
+      return;
+    }
 
-    const payload = {
-      planId: plan.id,
-      planName: plan.name,
-      audience: plan.audience,
-      billingCycle,
-      priceId,
-      amountUsd:
-        billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice,
-    };
+    const userRole = plan.audience === "tutors" ? "tutor" : "student";
+    const planTier = plan.audience === "tutors" ? "tutor_pro" : "student_pro";
+    const amountUsd =
+      billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
 
-    console.log("Stripe Subscription Checkout Triggered:", payload);
+    try {
+      setLoadingPlanId(plan.id);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/payments/create-checkout-session`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userEmail,
+            userName: session?.user?.name ?? "",
+            userRole,
+            planTier,
+            planName: `${plan.name} (${billingCycle})`,
+            billingCycle,
+            amountUsd,
+          }),
+        },
+      );
+
+      const data = await res.json();
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.message || "Could not start Stripe checkout");
+      }
+
+      window.location.href = data.url;
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Stripe checkout failed",
+      );
+      setLoadingPlanId(null);
+    }
   };
 
   const visiblePlans =
@@ -237,6 +272,7 @@ export default function PricingPage() {
               billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
             const isDark = plan.surfaceClass.includes("#141519");
             const isLavender = plan.surfaceClass.includes("brand-lavender");
+            const isLoading = loadingPlanId === plan.id;
 
             return (
               <article
@@ -335,10 +371,13 @@ export default function PricingPage() {
                   ) : (
                     <button
                       type="button"
+                      disabled={loadingPlanId !== null}
                       onClick={() => handleSubscribe(plan)}
-                      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3.5 font-manrope text-xs font-extrabold tracking-[0.14em] uppercase transition-colors ${plan.buttonClass}`}
+                      className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3.5 font-manrope text-xs font-extrabold tracking-[0.14em] uppercase transition-colors disabled:opacity-60 ${plan.buttonClass}`}
                     >
-                      <span>UPGRADE WITH STRIPE</span>
+                      <span>
+                        {isLoading ? "REDIRECTING..." : "UPGRADE WITH STRIPE"}
+                      </span>
                       <ArrowUpRight className="h-4 w-4" />
                     </button>
                   )}
