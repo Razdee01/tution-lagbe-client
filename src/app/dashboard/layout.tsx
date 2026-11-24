@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Bookmark,
   BookOpen,
   CreditCard,
   FileText,
@@ -31,6 +32,11 @@ const navByRole: Record<Role, NavItem[]> = {
       label: "My Applications",
       href: "/dashboard/student/my-applications",
       icon: FileText,
+    },
+    {
+      label: "Saved Tuitions",
+      href: "/dashboard/student/bookmarks",
+      icon: Bookmark,
     },
   ],
   tutor: [

@@ -7,19 +7,32 @@ export default async function StudentDashboardPage() {
     headers: await headers(),
   });
 
-  const email = session?.user?.email;
+  const email = session?.user?.email ?? "";
 
-  const res = email
-    ? await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/applications/${encodeURIComponent(email)}`,
-        { cache: "no-store" },
-      )
-    : null;
+  const [appsRes, profileRes] = email
+    ? await Promise.all([
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/applications/${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        ),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/profile/${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        ),
+      ])
+    : [null, null];
 
-  const applications = res?.ok ? await res.json() : [];
-  console.log(applications,"hello");
-  
+  const appsData = appsRes?.ok ? await appsRes.json() : [];
+  const applications = Array.isArray(appsData)
+    ? appsData
+    : (appsData?.applications ?? []);
 
+  const profileData = profileRes?.ok ? await profileRes.json() : null;
+  const plan = String(
+    profileData?.plan ??
+      (session?.user as { plan?: string } | undefined)?.plan ??
+      "FREE",
+  ).toUpperCase();
 
   const totalApplications = applications.length;
   const acceptedApplications = applications.filter(
@@ -33,7 +46,7 @@ export default async function StudentDashboardPage() {
     { label: "TOTAL APPLIED TUITIONS", value: String(totalApplications) },
     { label: "ACCEPTED APPLICATIONS", value: String(acceptedApplications) },
     { label: "PENDING APPLICATIONS", value: String(pendingApplications) },
-    { label: "CURRENT PLAN", value: "FREE" },
+    { label: "CURRENT PLAN", value: plan },
   ];
 
   return (

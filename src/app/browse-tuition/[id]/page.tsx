@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowLeft, CalendarDays, Mail, MapPin, User } from "lucide-react";
 import { Tuition } from "@/type/type";
 import ApplyModal from "@/components/ApplyModal";
-
+import BookmarkButton from "@/components/BookmarkButton";
 
 const TuitionDetailsPage = async ({
   params,
@@ -23,17 +23,22 @@ const TuitionDetailsPage = async ({
 
   const raw = await res.json();
   const tuition: Tuition = raw?.result ?? raw?.data ?? raw?.tuition ?? raw;
+  const tuitionId = tuition?._id || id;
 
   return (
     <section className="w-full bg-surface-warm py-16 text-foreground sm:py-24">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-10">
-        <Link
-          href="/browse-tuition"
-          className="inline-flex items-center gap-2 font-manrope text-xs font-extrabold tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-brand-orange"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>BACK TO BROWSE TUITION</span>
-        </Link>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Link
+            href="/browse-tuition"
+            className="inline-flex items-center gap-2 font-manrope text-xs font-extrabold tracking-[0.14em] uppercase text-muted-foreground transition-colors hover:text-brand-orange"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>BACK TO BROWSE TUITION</span>
+          </Link>
+
+          <BookmarkButton tuitionId={tuitionId} />
+        </div>
 
         <div className="mt-6 overflow-hidden rounded-2xl bg-card">
           {tuition?.bannerImage && (
@@ -99,7 +104,7 @@ const TuitionDetailsPage = async ({
               </div>
             </div>
 
-            {/* Fee & Apply Button */}
+            {/* Fee & Apply / Bookmark Actions */}
             <div className="mt-8 flex flex-col justify-between gap-4 rounded-2xl bg-surface-warm p-6 sm:flex-row sm:items-center">
               <div>
                 <p className="font-manrope text-[10px] font-extrabold tracking-[0.16em] uppercase text-muted-foreground">
@@ -113,7 +118,10 @@ const TuitionDetailsPage = async ({
                 </p>
               </div>
 
-              <ApplyModal tuition={tuition} />
+              <div className="flex flex-wrap items-center gap-3">
+                <BookmarkButton tuitionId={tuitionId} />
+                <ApplyModal tuition={tuition} />
+              </div>
             </div>
           </div>
         </div>

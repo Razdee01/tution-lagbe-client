@@ -15,23 +15,30 @@ export default async function TutorDashboardPage() {
   });
 
   const email = session?.user?.email ?? "";
+
+  const [tuitionsRes, appsRes, profileRes] = email
+    ? await Promise.all([
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/tuitions/tutor/${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        ),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/applications/tutor/${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        ),
+        fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/profile/${encodeURIComponent(email)}`,
+          { cache: "no-store" },
+        ),
+      ])
+    : [null, null, null];
+
+  const profileData = profileRes?.ok ? await profileRes.json() : null;
   const plan = String(
-    (session?.user as { plan?: string } | undefined)?.plan ?? "FREE",
+    profileData?.plan ??
+      (session?.user as { plan?: string } | undefined)?.plan ??
+      "FREE",
   ).toUpperCase();
-
-  const tuitionsRes = email
-    ? await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/tuitions/tutor/${encodeURIComponent(email)}`,
-        { cache: "no-store" },
-      )
-    : null;
-
-  const appsRes = email
-    ? await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/applications/tutor/${encodeURIComponent(email)}`,
-        { cache: "no-store" },
-      )
-    : null;
 
   const tuitionsData = tuitionsRes?.ok ? await tuitionsRes.json() : [];
   const tuitions: TuitionDoc[] = Array.isArray(tuitionsData)

@@ -3,8 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Bookmark,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
@@ -12,12 +13,14 @@ import {
   Search,
   SlidersHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
+import { authClient } from "@/lib/auth-client";
 import { Tuition } from "@/type/type";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const PAGE_SIZE = 9;
+const FREE_BOOKMARK_LIMIT = 5;
 
-// Waits `delay` ms after the value stops changing before updating
 function useDebounce<T>(value: T, delay = 400) {
   const [debounced, setDebounced] = useState(value);
 
@@ -30,9 +33,21 @@ function useDebounce<T>(value: T, delay = 400) {
 }
 
 const BrowseTuition = () => {
+  const router = useRouter();
+  const { data: session } = authClient.useSession();
+  const userEmail = session?.user?.email ?? "";
+  const userRole = String(
+    (session?.user as { role?: string } | undefined)?.role ?? "",
+  ).toLowerCase();
+
   const [tuitions, setTuitions] = useState<Tuition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Bookmark state
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const [userPlan, setUserPlan] = useState<string>("free");
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Read initial filters from the URL (set by the home page search bar)
   const searchParams = useSearchParams();
@@ -54,7 +69,7 @@ const BrowseTuition = () => {
     searchParams.get("location") ?? "ALL",
   );
 
-  // Dropdown options (loaded separately so they don't shrink when filtering)
+  // Dropdown options
   const [subjects, setSubjects] = useState<string[]>([]);
 
   // Pagination state
@@ -63,6 +78,30 @@ const BrowseTuition = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const debouncedSearch = useDebounce(searchQuery, 400);
+
+  // 0. Load logged-in student's bookmarked IDs & live plan
+  useEffect(() => {
+    if (!userEmail) {
+      setBookmarkedIds([]);
+      setUserPlan("free");
+      return;
+    }
+
+    fetch(`${API_URL}/users/profile/${encodeURIComponent(userEmail)}`, {
+      cache: "no-store",
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        setUserPlan(String(data.plan || "free").toLowerCase());
+        setBookmarkedIds(
+          Array.isArray(data.bookmarkedTuitionIds)
+            ? data.bookmarkedTuitionIds
+            : [],
+        );
+      })
+      .catch(() => {});
+  }, [userEmail]);
 
   // 1. Load subject options once
   useEffect(() => {
@@ -134,6 +173,69 @@ const BrowseTuition = () => {
     selectedLocation,
     page,
   ]);
+
+  const handleToggleBookmark = async (
+    e: React.MouseEvent,
+    tuitionId: string,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!userEmail) {
+      toast.error("Please sign in as a student to bookmark tuitions.");
+      router.push("/sign-in");
+      return;
+    }
+
+    if (userRole && userRole !== "student") {
+      toast.error("Only student accounts can bookmark tuitions.");
+      return;
+    }
+
+    const alreadySaved = bookmarkedIds.includes(tuitionId);
+
+    if (
+      !alreadySaved &&
+      userPlan !== "pro" &&
+      bookmarkedIds.length >= FREE_BOOKMARK_LIMIT
+    ) {
+      toast.error(
+        `Free students can bookmark up to ${FREE_BOOKMARK_LIMIT} tuitions. Upgrade to Pro for unlimited bookmarks!`,
+      );
+      return;
+    }
+
+    try {
+      setTogglingId(tuitionId);
+      const res = await fetch(`${API_URL}/users/bookmarks/toggle`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, tuitionId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || "Failed to update bookmark");
+      }
+
+      const updatedIds = Array.isArray(data.bookmarkedTuitionIds)
+        ? data.bookmarkedTuitionIds
+        : alreadySaved
+          ? bookmarkedIds.filter((id) => id !== tuitionId)
+          : [...bookmarkedIds, tuitionId];
+
+      setBookmarkedIds(updatedIds);
+      toast.success(
+        alreadySaved ? "Removed from saved tuitions" : "Saved to bookmarks",
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not update bookmark",
+      );
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -210,7 +312,6 @@ const BrowseTuition = () => {
 
         {/* Search & Filter Bar */}
         <div className="mt-10 grid grid-cols-1 gap-4 rounded-2xl bg-card p-4 sm:p-6 md:grid-cols-12 md:items-center">
-          {/* Search Input */}
           <div className="relative md:col-span-6">
             <Search className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
@@ -246,7 +347,6 @@ const BrowseTuition = () => {
             </div>
           )}
 
-          {/* Mode Filter */}
           <div className="md:col-span-3">
             <label htmlFor="mode-filter" className="sr-only">
               Filter by mode
@@ -264,7 +364,6 @@ const BrowseTuition = () => {
             </select>
           </div>
 
-          {/* Subject Filter */}
           <div className="md:col-span-3">
             <label htmlFor="subject-filter" className="sr-only">
               Filter by subject
@@ -331,6 +430,8 @@ const BrowseTuition = () => {
               {tuitions.map((item) => {
                 const modeLabel = item.mode.toUpperCase();
                 const isOnline = modeLabel.includes("ONLINE");
+                const isBookmarked = bookmarkedIds.includes(item._id);
+                const isToggling = togglingId === item._id;
                 const metaLine = [
                   item.subject.toUpperCase(),
                   item.classLevel.toUpperCase(),
@@ -363,6 +464,27 @@ const BrowseTuition = () => {
                         >
                           {modeLabel}
                         </span>
+
+                        <button
+                          type="button"
+                          disabled={isToggling}
+                          onClick={(e) => handleToggleBookmark(e, item._id)}
+                          aria-label={
+                            isBookmarked
+                              ? "Remove bookmark"
+                              : "Bookmark tuition"
+                          }
+                          title={isBookmarked ? "Saved" : "Save tuition"}
+                          className={`absolute top-3 right-3 z-10 inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl transition-colors disabled:opacity-60 ${
+                            isBookmarked
+                              ? "bg-brand-orange text-[#141519]"
+                              : "bg-[#141519]/80 text-[#FAF8F5] hover:bg-brand-orange hover:text-[#141519]"
+                          }`}
+                        >
+                          <Bookmark
+                            className={`h-4 w-4 ${isBookmarked ? "fill-current" : ""}`}
+                          />
+                        </button>
                       </div>
 
                       <div className="p-6">
