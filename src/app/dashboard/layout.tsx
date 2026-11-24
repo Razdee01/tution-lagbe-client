@@ -13,6 +13,7 @@ import {
   PanelLeftOpen,
   PlusCircle,
   ShieldCheck,
+  UserCog,
   Users,
 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
@@ -38,6 +39,11 @@ const navByRole: Record<Role, NavItem[]> = {
       href: "/dashboard/student/bookmarks",
       icon: Bookmark,
     },
+    {
+      label: "Update Profile",
+      href: "/dashboard/profile",
+      icon: UserCog,
+    },
   ],
   tutor: [
     { label: "Overview", href: "/dashboard/tutor", icon: LayoutDashboard },
@@ -56,6 +62,11 @@ const navByRole: Record<Role, NavItem[]> = {
       href: "/dashboard/tutor/applicants",
       icon: Users,
     },
+    {
+      label: "Update Profile",
+      href: "/dashboard/profile",
+      icon: UserCog,
+    },
   ],
   admin: [
     { label: "Overview", href: "/dashboard/admin", icon: LayoutDashboard },
@@ -69,6 +80,11 @@ const navByRole: Record<Role, NavItem[]> = {
       label: "Transactions",
       href: "/dashboard/admin/transactions",
       icon: CreditCard,
+    },
+    {
+      label: "Update Profile",
+      href: "/dashboard/profile",
+      icon: UserCog,
     },
   ],
 };
@@ -180,7 +196,10 @@ export default function DashboardLayout({
             </div>
 
             {/* User Profile Summary */}
-            <div className="mt-8 rounded-2xl bg-surface-warm p-4">
+            <Link
+              href="/dashboard/profile"
+              className="mt-8 block rounded-2xl bg-surface-warm p-4 transition-colors hover:bg-surface-warm/80"
+            >
               <p className="truncate font-heading text-sm font-extrabold text-foreground">
                 {profile.name}
               </p>
@@ -199,7 +218,7 @@ export default function DashboardLayout({
                   {profile.plan}
                 </span>
               </div>
-            </div>
+            </Link>
           </aside>
         )}
 
